@@ -34,7 +34,7 @@ Edit `.env`:
 STEAM_API_KEY=<your key>
 SESSION_SECRET=<generate with the command below>
 PUBLIC_URL=https://steamviewer.pixeleyesd.dpdns.org
-PORT=3000
+PORT=8111
 ```
 
 Generate a session secret:
@@ -43,7 +43,7 @@ Generate a session secret:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-`PUBLIC_URL` matters more than it looks — Steam's OpenID login redirects
+`PUBLIC_URL` matters more than it looks, Steam's OpenID login redirects
 back to exactly this URL, so it has to match what Cloudflare is fronting.
 
 ## 3. Run it
@@ -52,7 +52,7 @@ back to exactly this URL, so it has to match what Cloudflare is fronting.
 npm start
 ```
 
-This listens on `localhost:3000` (or whatever `PORT` you set). For it to
+This listens on `localhost:8111` (or whatever `PORT` you set). For it to
 survive reboots/crashes, run it under something like `pm2` or a systemd
 service rather than just `node server.js` in a terminal:
 
@@ -75,7 +75,7 @@ No special headers are required; `app.set('trust proxy', 1)` in `server.js`
 already accounts for running behind a proxy. Cloudflare terminates TLS, so
 the app itself only ever needs to speak plain HTTP internally.
 
-Once that's live, `https://steamviewer.pixeleyesd.dpdns.org` should show the
+Once that's live, `https://yoursubdomain.yourdomain.com` should show the
 site directly.
 
 ## Notes / limitations
