@@ -5,13 +5,13 @@ box art + details, hit Play to launch the game through your local Steam client.
 
 ## How it fits together
 
-- **Frontend** (`public/`) — plain HTML/CSS/JS, no build step, no framework.
-- **Backend** (`server.js`) — small Express app that:
-  - handles Steam login (OpenID — Steam authenticates the user, you never see a password)
+- **Frontend** (`public/`) plain HTML/CSS/JS, no build step, no framework.
+- **Backend** (`server.js`) small Express app that:
+  - handles Steam login (OpenID, Steam authenticates the user, server never see the password)
   - signs a session cookie (no database needed)
   - proxies two Steam endpoints (`GetOwnedGames`, `appdetails`) so your API key
     never reaches the browser and you don't hit Steam's CORS wall
-- **Play button** — just an `<a href="steam://rungameid/APPID">`. The browser
+- **Play button** just an `<a href="steam://rungameid/APPID">`. The browser
   hands this off to the OS, which hands it to the already-installed Steam
   client. The server is not involved in launching anything.
 
