@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SteamViewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-name">STEAM<span class="brand-accent">VIEWER</span></span>
+    </div>
+
+    <div class="account" id="account">
+      <button class="btn-signin" id="signin-btn">Sign in through Steam</button>
+    </div>
+  </header>
+
+  <main class="room">
+
+    <div class="hint-bar" id="hint-bar">
+      Scroll to browse &nbsp;·&nbsp; Ctrl + Scroll to zoom
+    </div>
+
+    <div class="shelf-viewport" id="shelf-viewport">
+      <div class="shelf-zoom" id="shelf-zoom">
+        <div class="shelf-container" id="shelf-container">
+          <!-- spines injected here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" id="empty-state" hidden>
+      <p>Sign in through Steam to see your library on the shelf.</p>
+    </div>
+
+    <div class="loading-state" id="loading-state" hidden>
+      <p>Pulling your library from Steam…</p>
+    </div>
+
+  </main>
+
+  <!-- Detail overlay -->
+  <div class="detail-overlay" id="detail-overlay" hidden>
+    <div class="detail-panel">
+      <button class="detail-close" id="detail-close" aria-label="Close">✕</button>
+      <div class="detail-art">
+        <img id="detail-cover" src="" alt="" />
+      </div>
+      <div class="detail-info">
+        <h2 id="detail-title">—</h2>
+        <div class="detail-genres" id="detail-genres"></div>
+        <p class="detail-desc" id="detail-desc">Loading details…</p>
+        <div class="detail-meta">
+          <span id="detail-price"></span>
+          <span id="detail-playtime"></span>
+        </div>
+        <a class="btn-play" id="detail-play" href="#">Play</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

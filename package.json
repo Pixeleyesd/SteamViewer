@@ -1,0 +1,17 @@
+{
+  "name": "steamviewer",
+  "version": "1.0.0",
+  "description": "Sign in with Steam and browse your library as a bookshelf.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,373 @@
+/* ============================================================
+   SteamShelf — tokens
+   A dim library at night: dark walnut room, wood shelves with
+   visible ledges, parchment text. Steam blue is the one accent,
+   used only on the two actions that matter: sign in, and play.
+   No transitions/animations anywhere, per spec.
+   ============================================================ */
+
+:root {
+  --bg-room: #14100c;
+  --wood-shelf: #3f2a1a;
+  --wood-shelf-dark: #241609;
+  --wood-shelf-light: #6b4529;
+  --parchment: #e9dcc0;
+  --muted: #a3906f;
+  --steam-blue: #66c0f4;
+  --steam-blue-dim: #2a7bab;
+  --panel-dark: #1c1610;
+  --panel-border: #40301f;
+
+  --font-display: 'Oswald', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  --shelf-band-height: 216px;
+  --spine-height: 190px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg-room);
+  color: var(--parchment);
+  font-family: var(--font-body);
+}
+
+/* ---------------- Top bar ---------------- */
+
+.topbar {
+  height: 64px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--panel-dark);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+}
+
+.brand-accent {
+  color: var(--steam-blue);
+}
+
+.btn-signin {
+  background: var(--steam-blue);
+  color: #0c1a22;
+  border: none;
+  padding: 10px 18px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-signin:hover {
+  background: #7fcaf7;
+}
+
+.btn-signin:focus-visible,
+.detail-close:focus-visible,
+.btn-play:focus-visible,
+.spine:focus-visible {
+  outline: 2px solid var(--steam-blue);
+  outline-offset: 2px;
+}
+
+.account-signed-in {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-avatar {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--panel-border);
+}
+
+.account-name {
+  font-size: 14px;
+  color: var(--parchment);
+}
+
+.btn-logout {
+  background: none;
+  border: 1px solid var(--panel-border);
+  color: var(--muted);
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.btn-logout:hover {
+  color: var(--parchment);
+  border-color: var(--muted);
+}
+
+/* ---------------- Room / shelf area ---------------- */
+
+.room {
+  position: relative;
+  height: calc(100% - 64px);
+  overflow: hidden;
+}
+
+.hint-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: rgba(28, 22, 16, 0.85);
+  border: 1px solid var(--panel-border);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 6px 14px;
+  pointer-events: none;
+}
+
+.shelf-viewport {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* CSS zoom (not transform) so native scrolling continues to work
+   correctly against the true, scaled layout size. */
+.shelf-zoom {
+  zoom: 1;
+}
+
+.shelf-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: flex-end;
+  padding: 20px 24px 0 24px;
+
+  /* Repeating wood bands = the shelves themselves. Each band is
+     var(--shelf-band-height) tall; spines are shorter than the band
+     so their feet rest on the ledge with a little headroom above. */
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      var(--wood-shelf) 0,
+      var(--wood-shelf) calc(var(--shelf-band-height) - 14px),
+      var(--wood-shelf-dark) calc(var(--shelf-band-height) - 14px),
+      var(--wood-shelf-dark) calc(var(--shelf-band-height) - 10px),
+      var(--wood-shelf-light) calc(var(--shelf-band-height) - 10px),
+      var(--wood-shelf-light) calc(var(--shelf-band-height) - 8px),
+      var(--wood-shelf-dark) calc(var(--shelf-band-height) - 8px),
+      var(--wood-shelf-dark) var(--shelf-band-height)
+    );
+  background-attachment: local;
+}
+
+/* Small brass shelf-pin dots along each ledge — the one bit of
+   ornament, repeated quietly rather than showing up once as a gimmick. */
+.shelf-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ---------------- Book spines ---------------- */
+
+.spine {
+  height: var(--spine-height);
+  margin: 0 1px calc(var(--shelf-band-height) - var(--spine-height) - 6px) 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 10px 4px;
+  cursor: pointer;
+  border: none;
+  border-left: 1px solid rgba(0,0,0,0.25);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  box-shadow: inset 0 0 14px rgba(0,0,0,0.35);
+  position: relative;
+}
+
+.spine:hover {
+  filter: brightness(1.12);
+}
+
+.spine-title {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--parchment);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 100%;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* ---------------- Empty / loading states ---------------- */
+
+.empty-state,
+.loading-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 15px;
+  text-align: center;
+  padding: 0 20px;
+}
+
+/* ---------------- Detail overlay ---------------- */
+
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 6, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 24px;
+}
+
+.detail-panel {
+  background: var(--panel-dark);
+  border: 1px solid var(--panel-border);
+  max-width: 760px;
+  width: 100%;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.detail-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.detail-close:hover {
+  color: var(--parchment);
+}
+
+.detail-art {
+  flex: 0 0 260px;
+  background: var(--wood-shelf-dark);
+}
+
+.detail-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.detail-info {
+  flex: 1;
+  padding: 28px 28px 24px 28px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-info h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 24px;
+  margin: 0 0 10px 0;
+  letter-spacing: 0.01em;
+}
+
+.detail-genres {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+
+.detail-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--parchment);
+  flex: 1;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.btn-play {
+  align-self: flex-start;
+  background: var(--steam-blue);
+  color: #0c1a22;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 11px 26px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-play:hover {
+  background: #7fcaf7;
+}
+
+/* ---------------- Responsive ---------------- */
+
+@media (max-width: 640px) {
+  .detail-panel {
+    flex-direction: column;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .detail-art {
+    flex: 0 0 220px;
+  }
+  .hint-bar {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+}
+
+/* ---------------- Reduced motion ---------------- */
+/* The design has no animation by default; this just guards against
+   the hover brightness filter reading as motion for anyone who has
+   reduced-motion set, even though it's an instant property change. */
+@media (prefers-reduced-motion: reduce) {
+  .spine:hover {
+    filter: none;
+  }
+}
