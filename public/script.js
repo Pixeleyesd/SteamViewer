@@ -1,8 +1,5 @@
-// SteamViewer frontend
-// No animation libraries, no CSS transitions — state changes are instant,
-// per spec. The only "interactive" pieces are: zoom (ctrl+scroll),
-// scroll (plain scroll, handled natively by the browser), and the
-// spine -> detail panel click.
+// SteamViewer frontend, interactive pieces are: zoom (ctrl+scroll),
+// and the spine, detail panel click.
 
 const accountEl = document.getElementById('account');
 const shelfContainer = document.getElementById('shelf-container');
@@ -62,7 +59,7 @@ function renderSignedInAccount(data) {
   });
 }
 
-// ---------------- Library ----------------
+// Lib
 
 async function loadGames() {
   emptyState.hidden = true;
@@ -91,7 +88,7 @@ async function loadGames() {
 
 function renderShelf(games) {
   shelfContainer.innerHTML = '';
-  // Sort alphabetically so it reads like an actual organized shelf.
+  // Sort alphabetically
   const sorted = [...games].sort((a, b) => a.name.localeCompare(b.name));
 
   for (const game of sorted) {
@@ -116,7 +113,7 @@ function renderShelf(games) {
 }
 
 // Deterministic hash from an appid so the same game always gets the
-// same spine width/color, but different games look naturally varied —
+// same spine width/color, but different games look naturally varied,
 // like a real shelf, not a uniform grid.
 function hashInt(n) {
   let h = Number(n) || 0;
@@ -137,14 +134,14 @@ function spineWidth(appid, name) {
 function spineColor(appid) {
   const h = hashInt(appid);
   const hue = h % 360;
-  // Muted, warm book-cloth tones — constrained saturation/lightness
+  // Muted, warm book-cloth tones, constrained saturation/lightness
   // so everything still reads as part of the same shelf.
   const sat = 30 + (h % 20);
   const light = 26 + (h % 14);
   return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
 
-// ---------------- Detail panel ----------------
+// Detail
 
 async function openDetail(game) {
   overlay.hidden = false;
@@ -196,10 +193,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// ---------------- Zoom (ctrl+scroll) / scroll (plain) ----------------
-// Plain scroll is left entirely to the browser's native overflow-y
-// handling on .shelf-viewport. We only intercept the wheel event when
-// ctrlKey is held, to zoom instead.
+// Zoom
 
 shelfViewport.addEventListener('wheel', (e) => {
   if (!e.ctrlKey) return; // let native scroll happen
@@ -210,6 +204,6 @@ shelfViewport.addEventListener('wheel', (e) => {
   shelfZoom.style.zoom = zoomLevel;
 }, { passive: false });
 
-// ---------------- Init ----------------
+// init
 
 checkSession();

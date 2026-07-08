@@ -1,11 +1,3 @@
-/* ============================================================
-   SteamShelf — tokens
-   A dim library at night: dark walnut room, wood shelves with
-   visible ledges, parchment text. Steam blue is the one accent,
-   used only on the two actions that matter: sign in, and play.
-   No transitions/animations anywhere, per spec.
-   ============================================================ */
-
 :root {
   --bg-room: #14100c;
   --wood-shelf: #3f2a1a;
@@ -37,8 +29,6 @@ html, body {
   color: var(--parchment);
   font-family: var(--font-body);
 }
-
-/* ---------------- Top bar ---------------- */
 
 .topbar {
   height: 64px;
@@ -119,8 +109,6 @@ html, body {
   border-color: var(--muted);
 }
 
-/* ---------------- Room / shelf area ---------------- */
-
 .room {
   position: relative;
   height: calc(100% - 64px);
@@ -147,8 +135,6 @@ html, body {
   overflow-x: hidden;
 }
 
-/* CSS zoom (not transform) so native scrolling continues to work
-   correctly against the true, scaled layout size. */
 .shelf-zoom {
   zoom: 1;
 }
@@ -160,9 +146,6 @@ html, body {
   align-items: flex-end;
   padding: 20px 24px 0 24px;
 
-  /* Repeating wood bands = the shelves themselves. Each band is
-     var(--shelf-band-height) tall; spines are shorter than the band
-     so their feet rest on the ledge with a little headroom above. */
   background-image:
     repeating-linear-gradient(
       to bottom,
@@ -178,16 +161,12 @@ html, body {
   background-attachment: local;
 }
 
-/* Small brass shelf-pin dots along each ledge — the one bit of
-   ornament, repeated quietly rather than showing up once as a gimmick. */
 .shelf-container::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
-
-/* ---------------- Book spines ---------------- */
 
 .spine {
   height: var(--spine-height);
@@ -224,8 +203,6 @@ html, body {
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 
-/* ---------------- Empty / loading states ---------------- */
-
 .empty-state,
 .loading-state {
   position: absolute;
@@ -238,8 +215,6 @@ html, body {
   text-align: center;
   padding: 0 20px;
 }
-
-/* ---------------- Detail overlay ---------------- */
 
 .detail-overlay {
   position: fixed;
@@ -345,8 +320,6 @@ html, body {
   background: #7fcaf7;
 }
 
-/* ---------------- Responsive ---------------- */
-
 @media (max-width: 640px) {
   .detail-panel {
     flex-direction: column;
@@ -362,10 +335,12 @@ html, body {
   }
 }
 
-/* ---------------- Reduced motion ---------------- */
-/* The design has no animation by default; this just guards against
-   the hover brightness filter reading as motion for anyone who has
-   reduced-motion set, even though it's an instant property change. */
+.detail-overlay[hidden],
+.empty-state[hidden],
+.loading-state[hidden] {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .spine:hover {
     filter: none;
