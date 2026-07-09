@@ -1,12 +1,17 @@
-// SteamViewer frontend, interactive pieces are: zoom (ctrl+scroll),
-// and the spine, detail panel click.
+// main frontend script. no animations, everything just shows/hides instantly
 
 const accountEl = document.getElementById('account');
+const toolbarEl = document.getElementById('toolbar');
 const shelfContainer = document.getElementById('shelf-container');
 const shelfZoom = document.getElementById('shelf-zoom');
 const shelfViewport = document.getElementById('shelf-viewport');
 const emptyState = document.getElementById('empty-state');
 const loadingState = document.getElementById('loading-state');
+
+const viewSelect = document.getElementById('view-select');
+const sortSelect = document.getElementById('sort-select');
+const filterBtn = document.getElementById('filter-btn');
+const filterInput = document.getElementById('filter-input');
 
 const overlay = document.getElementById('detail-overlay');
 const detailClose = document.getElementById('detail-close');
@@ -23,7 +28,12 @@ const ZOOM_MIN = 0.35;
 const ZOOM_MAX = 1.6;
 const ZOOM_STEP = 0.08;
 
-// ---------------- Auth ----------------
+let allGames = [];
+let viewMode = 'shelf'; // 'shelf' | 'list' | 'grid'
+let sortMode = 'name-asc';
+let filterText = '';
+
+// login stuff
 
 async function checkSession() {
   const res = await fetch('/api/me');
@@ -34,6 +44,7 @@ async function checkSession() {
     loadGames();
   } else {
     renderSignInButton();
+    toolbarEl.hidden = true;
     emptyState.hidden = false;
   }
 }
@@ -59,7 +70,7 @@ function renderSignedInAccount(data) {
   });
 }
 
-// Lib
+// loading games
 
 async function loadGames() {
   emptyState.hidden = true;
@@ -77,7 +88,9 @@ async function loadGames() {
       return;
     }
 
-    renderShelf(data.games);
+    allGames = data.games;
+    toolbarEl.hidden = false;
+    renderCurrentView();
   } catch (err) {
     loadingState.hidden = true;
     emptyState.hidden = false;
@@ -86,21 +99,95 @@ async function loadGames() {
   }
 }
 
-function renderShelf(games) {
-  shelfContainer.innerHTML = '';
-  // Sort alphabetically
-  const sorted = [...games].sort((a, b) => a.name.localeCompare(b.name));
+// view, sort, filter state
 
-  for (const game of sorted) {
+function getVisibleGames() {
+  let list = allGames;
+
+  if (filterText) {
+    const t = filterText.toLowerCase();
+    list = list.filter((g) => g.name.toLowerCase().includes(t));
+  }
+
+  const sorted = [...list];
+  switch (sortMode) {
+    case 'name-desc':
+      sorted.sort((a, b) => b.name.localeCompare(a.name));
+      break;
+    case 'playtime-desc':
+      sorted.sort((a, b) => b.playtimeMinutes - a.playtimeMinutes);
+      break;
+    case 'playtime-asc':
+      sorted.sort((a, b) => a.playtimeMinutes - b.playtimeMinutes);
+      break;
+    case 'name-asc':
+    default:
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return sorted;
+}
+
+function renderCurrentView() {
+  const games = getVisibleGames();
+  shelfContainer.className = `shelf-container mode-${viewMode}`;
+  shelfContainer.innerHTML = '';
+
+  if (games.length === 0) {
+    const msg = document.createElement('p');
+    msg.style.padding = '20px';
+    msg.style.color = 'var(--muted)';
+    msg.textContent = 'No games match that filter.';
+    shelfContainer.appendChild(msg);
+    return;
+  }
+
+  if (viewMode === 'grid') renderGrid(games);
+  else if (viewMode === 'list') renderList(games);
+  else renderShelf(games);
+}
+
+viewSelect.addEventListener('change', () => {
+  viewMode = viewSelect.value;
+  renderCurrentView();
+});
+
+sortSelect.addEventListener('change', () => {
+  sortMode = sortSelect.value;
+  renderCurrentView();
+});
+
+filterBtn.addEventListener('click', () => {
+  const showing = filterInput.hidden;
+  filterInput.hidden = !showing;
+  filterBtn.classList.toggle('active', showing);
+  filterBtn.setAttribute('aria-expanded', String(showing));
+  if (showing) filterInput.focus();
+  else {
+    filterInput.value = '';
+    filterText = '';
+    renderCurrentView();
+  }
+});
+
+filterInput.addEventListener('input', () => {
+  filterText = filterInput.value.trim();
+  renderCurrentView();
+});
+
+// bookshelf view
+
+function renderShelf(games) {
+  for (const game of games) {
+    const slot = document.createElement('div');
+    slot.className = 'spine-slot';
+
     const spine = document.createElement('button');
     spine.className = 'spine';
     spine.type = 'button';
     spine.style.width = `${spineWidth(game.appid, game.name)}px`;
-    spine.style.background = spineColor(game.appid);
+    spine.style.height = `${spineHeight(game.appid)}px`;
+    spine.style.background = game.themeColor || fallbackColor(game.appid);
     spine.setAttribute('aria-label', game.name);
-    spine.dataset.appid = game.appid;
-    spine.dataset.name = game.name;
-    spine.dataset.cover = game.coverUrl;
 
     const title = document.createElement('span');
     title.className = 'spine-title';
@@ -108,13 +195,68 @@ function renderShelf(games) {
     spine.appendChild(title);
 
     spine.addEventListener('click', () => openDetail(game));
-    shelfContainer.appendChild(spine);
+    slot.appendChild(spine);
+    shelfContainer.appendChild(slot);
   }
 }
 
-// Deterministic hash from an appid so the same game always gets the
-// same spine width/color, but different games look naturally varied,
-// like a real shelf, not a uniform grid.
+// grid view
+
+function renderGrid(games) {
+  for (const game of games) {
+    const item = document.createElement('button');
+    item.className = 'grid-item';
+    item.type = 'button';
+
+    const img = document.createElement('img');
+    img.className = 'grid-cover';
+    img.src = game.coverUrl;
+    img.alt = game.name;
+    img.loading = 'lazy';
+
+    const name = document.createElement('span');
+    name.className = 'grid-name';
+    name.textContent = game.name;
+
+    item.appendChild(img);
+    item.appendChild(name);
+    item.addEventListener('click', () => openDetail(game));
+    shelfContainer.appendChild(item);
+  }
+}
+
+// list view
+
+function renderList(games) {
+  for (const game of games) {
+    const row = document.createElement('button');
+    row.className = 'list-row';
+    row.type = 'button';
+
+    const thumb = document.createElement('img');
+    thumb.className = 'list-thumb';
+    thumb.src = game.coverUrl;
+    thumb.alt = '';
+    thumb.loading = 'lazy';
+
+    const name = document.createElement('span');
+    name.className = 'list-name';
+    name.textContent = game.name;
+
+    const playtime = document.createElement('span');
+    playtime.className = 'list-playtime';
+    playtime.textContent = formatPlaytime(game.playtimeMinutes);
+
+    row.appendChild(thumb);
+    row.appendChild(name);
+    row.appendChild(playtime);
+    row.addEventListener('click', () => openDetail(game));
+    shelfContainer.appendChild(row);
+  }
+}
+
+// same game always looks the same, different games look different
+
 function hashInt(n) {
   let h = Number(n) || 0;
   h = ((h << 13) ^ h) >>> 0;
@@ -124,24 +266,27 @@ function hashInt(n) {
 
 function spineWidth(appid, name) {
   const h = hashInt(appid);
-  // 34–68px, lightly influenced by title length so longer names
-  // get a hair more room.
-  const base = 34 + (h % 30);
+  const base = 34 + (h % 30); // 34–64px
   const nameBias = Math.min(name.length / 8, 6);
   return Math.round(base + nameBias);
 }
 
-function spineColor(appid) {
+function spineHeight(appid) {
+  // different number than the width hash so they don't match
+  const h = hashInt(appid * 2654435761);
+  return 132 + (h % 80); // 132–212px, within --spine-slot-height (226px)
+}
+
+// backup color if the server couldn't get one from the cover art
+function fallbackColor(appid) {
   const h = hashInt(appid);
   const hue = h % 360;
-  // Muted, warm book-cloth tones, constrained saturation/lightness
-  // so everything still reads as part of the same shelf.
   const sat = 30 + (h % 20);
   const light = 26 + (h % 14);
   return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
 
-// Detail
+// game details popup
 
 async function openDetail(game) {
   overlay.hidden = false;
@@ -193,7 +338,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// Zoom
+// ctrl+scroll zooms, normal scroll just scrolls like normal
 
 shelfViewport.addEventListener('wheel', (e) => {
   if (!e.ctrlKey) return; // let native scroll happen
@@ -204,6 +349,6 @@ shelfViewport.addEventListener('wheel', (e) => {
   shelfZoom.style.zoom = zoomLevel;
 }, { passive: false });
 
-// init
+// start
 
 checkSession();

@@ -15,36 +15,56 @@
       <span class="brand-name">STEAM<span class="brand-accent">VIEWER</span></span>
     </div>
 
-    <div class="account" id="account">
-      <button class="btn-signin" id="signin-btn">Sign in through Steam</button>
+    <div class="topbar-right">
+      <div class="toolbar" id="toolbar" hidden>
+        <select class="control-select" id="view-select" aria-label="View">
+          <option value="shelf">Bookshelf</option>
+          <option value="list">List</option>
+          <option value="grid">Grid</option>
+        </select>
+
+        <button class="btn-filter" id="filter-btn" type="button" aria-expanded="false">Filter</button>
+        <input class="filter-input" id="filter-input" type="text" placeholder="Filter by name…" hidden />
+
+        <select class="control-select" id="sort-select" aria-label="Sort">
+          <option value="name-asc">Name (A–Z)</option>
+          <option value="name-desc">Name (Z–A)</option>
+          <option value="playtime-desc">Most played</option>
+          <option value="playtime-asc">Least played</option>
+        </select>
+      </div>
+
+      <div class="account" id="account">
+        <button class="btn-signin" id="signin-btn">Sign in through Steam</button>
+      </div>
     </div>
   </header>
 
   <main class="room">
 
-    <div class="hint-bar" id="hint-bar">
-      Scroll to browse &nbsp;·&nbsp; Ctrl + Scroll to zoom
-    </div>
+    <div class="stage">
+      <div class="shelf-frame">
+        <div class="shelf-viewport" id="shelf-viewport">
+          <div class="shelf-zoom" id="shelf-zoom">
+            <div class="shelf-container mode-shelf" id="shelf-container">
+              <!-- games go here -->
+            </div>
+          </div>
+        </div>
 
-    <div class="shelf-viewport" id="shelf-viewport">
-      <div class="shelf-zoom" id="shelf-zoom">
-        <div class="shelf-container" id="shelf-container">
-          <!-- spines injected here -->
+        <div class="empty-state" id="empty-state" hidden>
+          <p>Sign in through Steam to see your library.</p>
+        </div>
+
+        <div class="loading-state" id="loading-state" hidden>
+          <p>Pulling your library from Steam…</p>
         </div>
       </div>
     </div>
 
-    <div class="empty-state" id="empty-state" hidden>
-      <p>Sign in through Steam to see your library on the shelf.</p>
-    </div>
-
-    <div class="loading-state" id="loading-state" hidden>
-      <p>Pulling your library from Steam…</p>
-    </div>
-
   </main>
 
-  <!-- Detail overlay -->
+  <!-- game details popup -->
   <div class="detail-overlay" id="detail-overlay" hidden>
     <div class="detail-panel">
       <button class="detail-close" id="detail-close" aria-label="Close">✕</button>

@@ -14,6 +14,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const path = require('path');
+const Jimp = require('jimp');
 
 const app = express();
 
@@ -57,6 +58,80 @@ function getCached(appid) {
 }
 function setCached(appid, data) {
   storeCache.set(appid, { data, expiresAt: Date.now() + STORE_CACHE_TTL_MS });
+}
+
+// --- Country lookup (for currency-correct prices) ------------------------
+// Steam's store API returns prices in whatever currency matches the `cc`
+// (country code) param. We look each signed-in user's country up once via
+// GetPlayerSummaries and cache it, rather than re-fetching it per game.
+const countryCache = new Map(); // steamid -> 2-letter country code
+
+async function getUserCountry(steamid) {
+  if (countryCache.has(steamid)) return countryCache.get(steamid);
+  try {
+    const url = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${STEAM_API_KEY}&steamids=${steamid}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const cc = data?.response?.players?.[0]?.loccountrycode || 'US';
+    countryCache.set(steamid, cc);
+    return cc;
+  } catch (err) {
+    countryCache.set(steamid, 'US');
+    return 'US';
+  }
+}
+
+// --- Theme color extraction ---------------------------------------------
+// "Main theme colour" for a spine = the average color of that game's cover
+// art, computed once per app id and cached for the life of the process.
+// This never touches the browser (Steam's CDN doesn't send CORS headers,
+// so a browser <canvas> couldn't read these pixels anyway) — it's done
+// here, server-side, where CORS doesn't apply.
+const themeColorCache = new Map(); // appid -> '#rrggbb' | null
+
+async function getThemeColor(appid, imageUrl) {
+  if (themeColorCache.has(appid)) return themeColorCache.get(appid);
+  try {
+    const resp = await fetch(imageUrl);
+    if (!resp.ok) throw new Error('cover image not available');
+    const buffer = Buffer.from(await resp.arrayBuffer());
+    const image = await Jimp.read(buffer);
+    image.resize(24, 24); // downsample — we only want an overall average, not detail
+
+    let r = 0, g = 0, b = 0, count = 0;
+    image.scan(0, 0, image.bitmap.width, image.bitmap.height, function (x, y, idx) {
+      r += this.bitmap.data[idx + 0];
+      g += this.bitmap.data[idx + 1];
+      b += this.bitmap.data[idx + 2];
+      count++;
+    });
+    r = Math.round(r / count);
+    g = Math.round(g / count);
+    b = Math.round(b / count);
+    const hex = '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+
+    themeColorCache.set(appid, hex);
+    return hex;
+  } catch (err) {
+    themeColorCache.set(appid, null); // remember failures too, so we don't retry every load
+    return null;
+  }
+}
+
+// Runs `fn` over `items` with at most `limit` in flight at once — lets us
+// pull theme colors for a whole library without hammering Steam's CDN or
+// pegging the CPU decoding dozens of images at the same time.
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
 }
 
 // --- Session cookie helpers ---------------------------------------------
@@ -192,14 +267,22 @@ app.get('/api/games', requireAuth, async (req, res) => {
     const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_API_KEY}&steamid=${req.steamid}&include_appinfo=1&include_played_free_games=1`;
     const resp = await fetch(url);
     const data = await resp.json();
-    const games = (data?.response?.games || []).map((g) => ({
-      appid: g.appid,
-      name: g.name,
-      playtimeMinutes: g.playtime_forever || 0,
-      // Vertical "library" cover art — the same asset Steam's own client
-      // uses for its grid view. Frontend falls back gracefully if missing.
-      coverUrl: `https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`,
-    }));
+    const rawGames = data?.response?.games || [];
+
+    // Theme color per game — cached after the first computation, so this
+    // is only slow the first time a given game is seen by the server at all.
+    const games = await mapWithConcurrency(rawGames, 8, async (g) => {
+      const coverUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`;
+      const themeColor = await getThemeColor(g.appid, coverUrl);
+      return {
+        appid: g.appid,
+        name: g.name,
+        playtimeMinutes: g.playtime_forever || 0,
+        coverUrl,
+        themeColor, // hex string, or null if extraction failed — frontend falls back
+      };
+    });
+
     res.json({ games });
   } catch (err) {
     console.error('GetOwnedGames error:', err);
@@ -212,11 +295,14 @@ app.get('/api/game/:appid', requireAuth, async (req, res) => {
   const appid = req.params.appid;
   if (!/^\d+$/.test(appid)) return res.status(400).json({ error: 'Invalid app id' });
 
-  const cached = getCached(appid);
+  const cc = await getUserCountry(req.steamid);
+  const cacheKey = `${appid}_${cc}`;
+
+  const cached = getCached(cacheKey);
   if (cached) return res.json(cached);
 
   try {
-    const url = `https://store.steampowered.com/api/appdetails?appids=${appid}`;
+    const url = `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=${cc}`;
     const resp = await fetch(url);
     const data = await resp.json();
     const entry = data?.[appid];
@@ -230,7 +316,7 @@ app.get('/api/game/:appid', requireAuth, async (req, res) => {
         price: null,
         headerImage: `https://cdn.akamai.steamstatic.com/steam/apps/${appid}/library_600x900.jpg`,
       };
-      setCached(appid, fallback);
+      setCached(cacheKey, fallback);
       return res.json(fallback);
     }
 
@@ -243,7 +329,7 @@ app.get('/api/game/:appid', requireAuth, async (req, res) => {
       price: d.is_free ? 'Free' : (d.price_overview?.final_formatted || null),
       headerImage: `https://cdn.akamai.steamstatic.com/steam/apps/${appid}/library_600x900.jpg`,
     };
-    setCached(appid, result);
+    setCached(cacheKey, result);
     res.json(result);
   } catch (err) {
     console.error('appdetails error:', err);
