@@ -1,7 +1,7 @@
 // SteamViewer server
 //
 // Responsibilities:
-//   1. Steam OpenID login (no password ever touches this server — Steam handles auth)
+//   1. Steam OpenID login (no password ever touches this server, Steam handles auth)
 //   2. A signed, cookie-based session (no database/session store needed)
 //   3. Proxy endpoints for the Steam Web API + Store API (keeps your API key secret,
 //      and avoids the browser CORS restrictions on Steam's endpoints)
